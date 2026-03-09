@@ -14,19 +14,30 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Theos
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           export THEOS=~/theos
           git clone --recursive https://github.com/theos/theos.git $THEOS
+          mkdir -p $THEOS/sdks
           
-          # Télécharger le SDK via l'API GitHub releases
-          SDK_URL=$(curl -s https://api.github.com/repos/theos/sdks/releases/latest \
-            | grep "browser_download_url" \
-            | grep "iPhoneOS" \
-            | head -1 \
-            | cut -d '"' -f 4)
-          
-          echo "SDK URL: $SDK_URL"
-          curl -L -o sdk.tar.xz "$SDK_URL"
+          # Récupérer l'URL avec auth
+          SDK_URL=$(curl -s \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/theos/sdks/releases/latest \
+            | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+assets = data.get('assets', [])
+for a in assets:
+    if 'iPhoneOS' in a['name']:
+        print(a['browser_download_url'])
+        break
+")
+          echo "URL: $SDK_URL"
+          curl -L -H "Authorization: Bearer $GITHUB_TOKEN" -o sdk.tar.xz "$SDK_URL"
+          ls -lh sdk.tar.xz
           tar -xf sdk.tar.xz -C $THEOS/sdks
 
       - name: Build dylib
