@@ -13,11 +13,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build with Theos
-        uses: kabiroberai/theos-action@v1
-        with:
-          sdk-version: "16.5"
-          theos-src: "https://github.com/theos/theos/archive/master.tar.gz"
+      - name: Install Theos
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          export THEOS=~/theos
+          git clone --recursive https://github.com/theos/theos.git $THEOS
+          curl -LO https://github.com/theos/sdks/releases/download/2024-10-27/iPhoneOS17.5.sdk.tar.xz
+          sudo mkdir -p $THEOS/sdks
+          sudo tar -xf iPhoneOS17.5.sdk.tar.xz -C $THEOS/sdks
+
+      - name: Build dylib
+        run: |
+          export THEOS=~/theos
+          export PATH=$THEOS/bin:$PATH
+          make
 
       - name: Upload dylib
         uses: actions/upload-artifact@v4
