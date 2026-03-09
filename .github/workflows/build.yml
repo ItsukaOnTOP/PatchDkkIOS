@@ -13,18 +13,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Theos
-        run: |
-          export THEOS=~/theos
-          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+      - name: Build with Theos
+        uses: kabiroberai/theos-action@v1
+        with:
+          sdk-version: "16.5"
+          theos-src: "https://github.com/theos/theos/archive/master.tar.gz"
 
-      - name: Build dylib
-        run: |
-          export THEOS=~/theos
-          export PATH=$THEOS/bin:$PATH
-          make
-
-      - name: Upload dylib artifact
+      - name: Upload dylib
         uses: actions/upload-artifact@v4
         with:
           name: IshinRedirect.dylib
