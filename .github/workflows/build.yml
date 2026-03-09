@@ -17,8 +17,16 @@ jobs:
         run: |
           export THEOS=~/theos
           git clone --recursive https://github.com/theos/theos.git $THEOS
-          curl -L -o sdk.tar.xz "https://github.com/theos/sdks/releases/download/2024-10-27/iPhoneOS17.5.sdk.tar.xz"
-          file sdk.tar.xz
+          
+          # Télécharger le SDK via l'API GitHub releases
+          SDK_URL=$(curl -s https://api.github.com/repos/theos/sdks/releases/latest \
+            | grep "browser_download_url" \
+            | grep "iPhoneOS" \
+            | head -1 \
+            | cut -d '"' -f 4)
+          
+          echo "SDK URL: $SDK_URL"
+          curl -L -o sdk.tar.xz "$SDK_URL"
           tar -xf sdk.tar.xz -C $THEOS/sdks
 
       - name: Build dylib
