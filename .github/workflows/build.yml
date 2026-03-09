@@ -15,30 +15,19 @@ jobs:
 
       - name: Install Theos
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           export THEOS=~/theos
           git clone --recursive https://github.com/theos/theos.git $THEOS
           mkdir -p $THEOS/sdks
           
-          # Récupérer l'URL avec auth
-          SDK_URL=$(curl -s \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/theos/sdks/releases/latest \
-            | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-assets = data.get('assets', [])
-for a in assets:
-    if 'iPhoneOS' in a['name']:
-        print(a['browser_download_url'])
-        break
-")
-          echo "URL: $SDK_URL"
-          curl -L -H "Authorization: Bearer $GITHUB_TOKEN" -o sdk.tar.xz "$SDK_URL"
-          ls -lh sdk.tar.xz
-          tar -xf sdk.tar.xz -C $THEOS/sdks
+          # gh CLI gère l'auth automatiquement
+          gh release download --repo theos/sdks \
+            --pattern "iPhoneOS*.sdk.tar.xz" \
+            --dir /tmp/sdks
+          
+          tar -xf /tmp/sdks/iPhoneOS*.sdk.tar.xz -C $THEOS/sdks
+          ls $THEOS/sdks
 
       - name: Build dylib
         run: |
