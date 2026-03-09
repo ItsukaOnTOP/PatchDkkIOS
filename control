@@ -1,0 +1,7 @@
+Package: com.toi.ishinredirect
+Name: IshinRedirect
+Version: 1.0
+Architecture: iphoneos-arm64
+Description: Redirects ishin-global.aktsk.com to custom server
+Author: toi
+Section: Tweaks
