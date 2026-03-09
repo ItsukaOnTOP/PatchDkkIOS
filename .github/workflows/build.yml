@@ -32,6 +32,7 @@ jobs:
         run: |
           export THEOS=~/theos
           export PATH=$THEOS/bin:$PATH
+          brew install ldid
           make
 
       - name: Upload dylib
