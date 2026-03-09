@@ -21,12 +21,11 @@ jobs:
           git clone --recursive https://github.com/theos/theos.git $THEOS
           mkdir -p $THEOS/sdks
           
-          # gh CLI gère l'auth automatiquement
           gh release download --repo theos/sdks \
-            --pattern "iPhoneOS*.sdk.tar.xz" \
+            --pattern "iPhoneOS16.5.sdk.tar.xz" \
             --dir /tmp/sdks
           
-          tar -xf /tmp/sdks/iPhoneOS*.sdk.tar.xz -C $THEOS/sdks
+          tar -xf /tmp/sdks/iPhoneOS16.5.sdk.tar.xz -C $THEOS/sdks
           ls $THEOS/sdks
 
       - name: Build dylib
