@@ -14,14 +14,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Theos
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           export THEOS=~/theos
           git clone --recursive https://github.com/theos/theos.git $THEOS
-          curl -LO https://github.com/theos/sdks/releases/download/2024-10-27/iPhoneOS17.5.sdk.tar.xz
-          sudo mkdir -p $THEOS/sdks
-          sudo tar -xf iPhoneOS17.5.sdk.tar.xz -C $THEOS/sdks
+          curl -L -o sdk.tar.xz "https://github.com/theos/sdks/releases/download/2024-10-27/iPhoneOS17.5.sdk.tar.xz"
+          file sdk.tar.xz
+          tar -xf sdk.tar.xz -C $THEOS/sdks
 
       - name: Build dylib
         run: |
