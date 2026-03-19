@@ -13,8 +13,7 @@
     if ([origURL containsString:@"ishin-global.aktsk.com"]) {
         NSString *newURL = [origURL stringByReplacingOccurrencesOfString:@"ishin-global.aktsk.com"
                                                                withString:@"dokkan-transcend.com"];
-        NSURL *url = [NSURL URLWithString:newURL];
-        [request setURL:url];
+        [request setURL:[NSURL URLWithString:newURL]];
         origURL = newURL;
     }
 
@@ -29,6 +28,14 @@
         NSString *newURL = [origURL stringByReplacingOccurrencesOfString:@"//cards"
                                                                withString:@"/cards"];
         [request setURL:[NSURL URLWithString:newURL]];
+        origURL = newURL;
+    }
+
+    if ([origURL containsString:@"//origin_episodes/"]) {
+        NSString *newURL = [origURL stringByReplacingOccurrencesOfString:@"//origin_episodes/"
+                                                               withString:@"/origin_episodes/"];
+        [request setURL:[NSURL URLWithString:newURL]];
+        origURL = newURL;
     }
 
     %orig(request);
