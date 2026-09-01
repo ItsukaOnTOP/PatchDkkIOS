@@ -1,0 +1,116 @@
+name: Build Standalone Dylib
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Theos
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+
+          export THEOS="$HOME/theos"
+
+          if [ -d "$THEOS" ]; then
+            rm -rf "$THEOS"
+          fi
+
+          git clone --recursive https://github.com/theos/theos.git "$THEOS"
+
+          mkdir -p "$THEOS/sdks"
+          mkdir -p /tmp/theos-sdks
+
+          gh release download \
+            --repo theos/sdks \
+            --pattern "iPhoneOS16.5.sdk.tar.xz" \
+            --dir /tmp/theos-sdks
+
+          tar -xf /tmp/theos-sdks/iPhoneOS16.5.sdk.tar.xz \
+            -C "$THEOS/sdks"
+
+          echo "THEOS=$THEOS" >> "$GITHUB_ENV"
+          echo "$THEOS/bin" >> "$GITHUB_PATH"
+
+      - name: Install ldid
+        run: |
+          set -e
+          brew install ldid
+
+          echo "=== ldid ==="
+          which ldid
+          ldid -h || true
+
+      - name: Build standalone dylib
+        run: |
+          set -e
+
+          export THEOS="$HOME/theos"
+          export PATH="$THEOS/bin:$PATH"
+
+          echo "=== Cleaning ==="
+          make clean
+
+          echo "=== Building ==="
+          make
+
+          echo "=== Build output ==="
+          ls -lah .theos/obj/debug/
+
+          test -f .theos/obj/debug/IshinRedirect.dylib
+
+      - name: Verify architecture
+        run: |
+          set -e
+
+          echo "=== file ==="
+          file .theos/obj/debug/IshinRedirect.dylib
+
+          echo "=== lipo ==="
+          lipo -info .theos/obj/debug/IshinRedirect.dylib
+
+          if ! lipo -info .theos/obj/debug/IshinRedirect.dylib | grep -qi "arm64"; then
+            echo "ERROR: IshinRedirect.dylib is not ARM64"
+            exit 1
+          fi
+
+      - name: Check dylib dependencies
+        run: |
+          set -e
+
+          echo "=== otool -L ==="
+          otool -L .theos/obj/debug/IshinRedirect.dylib
+
+          if otool -L .theos/obj/debug/IshinRedirect.dylib | \
+             grep -Eqi 'substrate|cydiasubstrate|ellekit|libhooker|substitute'; then
+            echo "ERROR: jailbreak hook runtime dependency detected"
+            exit 1
+          fi
+
+          echo "OK: no Substrate / ElleKit / libhooker / Substitute dependency"
+
+      - name: Show install name
+        run: |
+          set -e
+
+          echo "=== Install name ==="
+          otool -D .theos/obj/debug/IshinRedirect.dylib || true
+
+      - name: Upload standalone dylib
+        uses: actions/upload-artifact@v4
+        with:
+          name: IshinRedirect-standalone
+          path: .theos/obj/debug/IshinRedirect.dylib
+          if-no-files-found: error
+          retention-days: 30
