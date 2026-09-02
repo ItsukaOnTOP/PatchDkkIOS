@@ -1,0 +1,61 @@
+name: Build Host-Only Dylib
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Theos
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          export THEOS="$HOME/theos"
+          git clone --recursive https://github.com/theos/theos.git "$THEOS"
+          mkdir -p "$THEOS/sdks" /tmp/theos-sdks
+          gh release download \
+            --repo theos/sdks \
+            --pattern "iPhoneOS16.5.sdk.tar.xz" \
+            --dir /tmp/theos-sdks
+          tar -xf /tmp/theos-sdks/iPhoneOS16.5.sdk.tar.xz -C "$THEOS/sdks"
+
+      - name: Install ldid
+        run: brew install ldid
+
+      - name: Build
+        run: |
+          set -e
+          export THEOS="$HOME/theos"
+          export PATH="$THEOS/bin:$PATH"
+          make clean
+          make
+
+      - name: Verify standalone dylib
+        run: |
+          set -e
+          file .theos/obj/debug/IshinRedirect.dylib
+          lipo -info .theos/obj/debug/IshinRedirect.dylib
+          otool -L .theos/obj/debug/IshinRedirect.dylib
+
+          if otool -L .theos/obj/debug/IshinRedirect.dylib | \
+             grep -Eqi 'substrate|cydiasubstrate|ellekit|libhooker|substitute'; then
+            echo "ERROR: jailbreak runtime dependency detected"
+            exit 1
+          fi
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: IshinRedirect-host-only
+          path: .theos/obj/debug/IshinRedirect.dylib
+          if-no-files-found: error
